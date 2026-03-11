@@ -2,17 +2,40 @@ using UnityEngine;
 
 public class DisableOVRRightHandVisual : MonoBehaviour
 {
-    void Start()
+    private GameObject rightHandVisual;
+    private GameObject leftHandVisual;
+    private bool foundBoth = false;
+
+    void LateUpdate()
     {
-        GameObject rightHandVisual = GameObject.Find("OVRRightHandVisual");
-        if (rightHandVisual != null)
+        // Only search if we haven't found both yet
+        if (!foundBoth)
+        {
+            if (rightHandVisual == null)
+            {
+                rightHandVisual = GameObject.Find("OVRRightHandVisual");
+            }
+
+            if (leftHandVisual == null)
+            {
+                leftHandVisual = GameObject.Find("OVRLeftHandVisual");
+            }
+
+            if (rightHandVisual != null && leftHandVisual != null)
+            {
+                foundBoth = true;
+            }
+        }
+
+        // Disable if active (cheap check)
+        if (rightHandVisual != null && rightHandVisual.activeSelf)
         {
             rightHandVisual.SetActive(false);
-            Debug.Log("OVRRightHandVisual disabled at start.");
         }
-        else
+
+        if (leftHandVisual != null && leftHandVisual.activeSelf)
         {
-            Debug.LogWarning("OVRRightHandVisual not found in scene.");
+            leftHandVisual.SetActive(false);
         }
     }
 }

@@ -503,7 +503,8 @@ public class CoinBombScript1 : MonoBehaviour
     }
 
     /// <summary>
-    /// Get coin locations from StaticValsReach7 and calculate unique proactive locations
+    /// Get coin locations from StaticValsReach7 and calculate proactive locations using lookup table
+    /// This avoids clamping issues that could cause duplicate locations
     /// </summary>
     void GetRandomCoinLocations()
     {
@@ -513,56 +514,56 @@ public class CoinBombScript1 : MonoBehaviour
 
         Debug.Log($"Coin locations from StaticValsReach7: [{coin1Location}, {coin2Location}, {coin3Location}]");
 
-        int offsetPoints = Mathf.RoundToInt(proactiveOffset / 0.001992032f); // ~50 points = 10cm
+        // Use lookup table for proactive locations - guarantees no duplicates and proper spacing
+        proactiveLocation1 = GetProactiveLocationFromLookup(coin1Location);
+        proactiveLocation2 = GetProactiveLocationFromLookup(coin2Location);
+        proactiveLocation3 = GetProactiveLocationFromLookup(coin3Location);
 
-        // Calculate unique proactive locations using HashSet
-        HashSet<int> usedLocations = new HashSet<int>();
+        Debug.Log($"Proactive locations (from lookup): [{proactiveLocation1}, {proactiveLocation2}, {proactiveLocation3}]");
 
-        proactiveLocation1 = GetUniqueProactiveLocation(coin1Location, offsetPoints, usedLocations);
-        usedLocations.Add(proactiveLocation1);
-
-        proactiveLocation2 = GetUniqueProactiveLocation(coin2Location, offsetPoints, usedLocations);
-        usedLocations.Add(proactiveLocation2);
-
-        proactiveLocation3 = GetUniqueProactiveLocation(coin3Location, offsetPoints, usedLocations);
-
-        Debug.Log($"Proactive locations (unique): [{proactiveLocation1}, {proactiveLocation2}, {proactiveLocation3}]");
+        // Verify no duplicates
+        if (proactiveLocation1 == proactiveLocation2 || proactiveLocation1 == proactiveLocation3 || proactiveLocation2 == proactiveLocation3)
+        {
+            Debug.LogError($"CoinBombScript1: DUPLICATE proactive locations detected! This should not happen with properly spaced coin locations.");
+        }
     }
 
     /// <summary>
-    /// Calculate a unique proactive location that isn't already used
+    /// Lookup table for proactive locations - each coin location maps to a specific proactive point
+    /// This ensures no clamping issues and guarantees unique, well-spaced proactive locations
+    /// Offset is ~50 points (10cm) in a direction that stays within valid range (30-210)
     /// </summary>
-    int GetUniqueProactiveLocation(int coinLocation, int offsetPoints, HashSet<int> usedLocations)
+    int GetProactiveLocationFromLookup(int coinLocation)
     {
-        const int MIN_CLAMP = 30;
-        const int MAX_CLAMP = 210;
-
-        int dirPositive = coinLocation + offsetPoints;
-        int dirNegative = coinLocation - offsetPoints;
-
-        bool positiveWouldClamp = dirPositive > MAX_CLAMP;
-        bool negativeWouldClamp = dirNegative < MIN_CLAMP;
-
-        int dir;
-        if (positiveWouldClamp && !negativeWouldClamp)
-            dir = -1;
-        else if (negativeWouldClamp && !positiveWouldClamp)
-            dir = 1;
-        else
+        // Predefined mapping: coinLocation -> proactiveLocation
+        // Each proactive location is ~50 points away from coin, staying within 30-210 range
+        // Direction chosen to avoid edge clamping
+        switch (coinLocation)
         {
-            System.Random random = new System.Random();
-            dir = random.Next(0, 2) == 0 ? 1 : -1;
+            // Left group (52, 63, 74) - offset goes POSITIVE (toward middle)
+            case 52: return 102;  // 52 + 50 = 102
+            case 63: return 113;  // 63 + 50 = 113
+            case 74: return 124;  // 74 + 50 = 124
+
+            // Middle group (115, 125, 136) - offset goes NEGATIVE (toward left)
+            case 115: return 65;  // 115 - 50 = 65
+            case 125: return 75;  // 125 - 50 = 75
+            case 136: return 86;  // 136 - 50 = 86
+
+            // Right group (178, 188, 199) - offset goes NEGATIVE (toward middle)
+            case 178: return 128; // 178 - 50 = 128
+            case 188: return 138; // 188 - 50 = 138
+            case 199: return 149; // 199 - 50 = 149
+
+            default:
+                // Fallback for unexpected values
+                Debug.LogWarning($"CoinBombScript1: Unexpected coin location {coinLocation}, using fallback calculation");
+                int offset = Mathf.RoundToInt(proactiveOffset / 0.001992032f);
+                if (coinLocation < 120)
+                    return Mathf.Clamp(coinLocation + offset, 30, 210);
+                else
+                    return Mathf.Clamp(coinLocation - offset, 30, 210);
         }
-
-        int result = Mathf.Clamp(coinLocation + (dir * offsetPoints), MIN_CLAMP, MAX_CLAMP);
-
-        if (usedLocations.Contains(result))
-            result = Mathf.Clamp(coinLocation + (-dir * offsetPoints), MIN_CLAMP, MAX_CLAMP);
-
-        while (usedLocations.Contains(result))
-            result = Mathf.Clamp(result + 5, 30, 210);
-
-        return result;
     }
 
     public void RandomizeCoins()

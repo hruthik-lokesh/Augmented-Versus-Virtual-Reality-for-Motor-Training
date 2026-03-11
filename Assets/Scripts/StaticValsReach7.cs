@@ -59,70 +59,54 @@ public static class StaticValsReach7
     public static int ran3;
 
     /// <summary>
-    /// Select 3 random locations from possiblelocations with minimum 15 units apart
+    /// Select 3 locations from predefined sets with minimum 50 units apart (?10cm physical spacing)
     /// </summary>
     public static int[] Shuffle()
     {
         System.Random rand = new System.Random();
-        var shuffled = possiblelocations.OrderBy(x => rand.Next()).ToArray();
 
-        int[] selectedNumbers = new int[3];
-        int count = 0;
-
-        for (int i = 0; i < shuffled.Length; i++)
+        // Predefined sets with guaranteed 50+ unit spacing between all pairs
+        // Format: {left, middle, right} - ensures good physical separation (~10cm+)
+        int[][] validSets = new int[][]
         {
-            if (count == 0)
-            {
-                selectedNumbers[count++] = shuffled[i];
-            }
-            else if (count == 1 && Math.Abs(shuffled[i] - selectedNumbers[0]) >= 15)
-            {
-                selectedNumbers[count++] = shuffled[i];
-            }
-            else if (count == 2 && 
-                     Math.Abs(shuffled[i] - selectedNumbers[0]) >= 15 && 
-                     Math.Abs(shuffled[i] - selectedNumbers[1]) >= 15)
-            {
-                selectedNumbers[count++] = shuffled[i];
-            }
+            // Sets with 50+ spacing (?10cm physical distance)
+            new int[] {52, 115, 178},   // spacing: 63, 126, 63
+            new int[] {52, 115, 188},   // spacing: 63, 136, 73
+            new int[] {52, 125, 178},   // spacing: 73, 126, 53
+            new int[] {52, 125, 188},   // spacing: 73, 136, 63
+            new int[] {52, 125, 199},   // spacing: 73, 147, 74
+            new int[] {52, 136, 188},   // spacing: 84, 136, 52
+            new int[] {52, 136, 199},   // spacing: 84, 147, 63
+            new int[] {63, 115, 178},   // spacing: 52, 115, 63
+            new int[] {63, 115, 188},   // spacing: 52, 125, 73
+            new int[] {63, 125, 178},   // spacing: 62, 115, 53
+            new int[] {63, 125, 188},   // spacing: 62, 125, 63
+            new int[] {63, 125, 199},   // spacing: 62, 136, 74
+            new int[] {63, 136, 188},   // spacing: 73, 125, 52
+            new int[] {63, 136, 199},   // spacing: 73, 136, 63
+            new int[] {74, 125, 178},   // spacing: 51, 104, 53
+            new int[] {74, 125, 188},   // spacing: 51, 114, 63
+            new int[] {74, 125, 199},   // spacing: 51, 125, 74
+            new int[] {74, 136, 188},   // spacing: 62, 114, 52
+            new int[] {74, 136, 199},   // spacing: 62, 125, 63
+        };
 
-            if (count == 3) break;
-        }
+        // Randomly select one of the valid sets
+        int idx = rand.Next(validSets.Length);
+        int[] selectedNumbers = validSets[idx];
 
-        // Fallback: use hardcoded sets with VALID locations only
-        if (count < 3)
-        {
-            Debug.LogWarning($"StaticValsReach7: Only found {count} locations. Using hardcoded fallback set.");
-            int[][] fallbackSets = new int[][]
-            {
-                // Format: {left, middle, right} - all spaced 40+ apart
-                new int[] {74, 125, 178},   // Best: all away from edges
-                new int[] {74, 125, 188},
-                new int[] {74, 136, 178},
-                new int[] {74, 115, 178},
-                new int[] {63, 125, 188},
-                new int[] {63, 136, 188},
-                new int[] {52, 125, 199},   // Edge cases but middle is centered
-                new int[] {52, 136, 199},
-            };
-            int idx = rand.Next(fallbackSets.Length);
-            selectedNumbers[0] = fallbackSets[idx][0];
-            selectedNumbers[1] = fallbackSets[idx][1];
-            selectedNumbers[2] = fallbackSets[idx][2];
-        }
-
-        // Validate spacing
+        // Validate spacing (should always pass, but log for verification)
         int d01 = Math.Abs(selectedNumbers[0] - selectedNumbers[1]);
         int d02 = Math.Abs(selectedNumbers[0] - selectedNumbers[2]);
         int d12 = Math.Abs(selectedNumbers[1] - selectedNumbers[2]);
 
-        if (d01 < 15 || d02 < 15 || d12 < 15)
+        if (d01 < 50 || d02 < 50 || d12 < 50)
         {
             Debug.LogError($"StaticValsReach7: SPACING ERROR! [{selectedNumbers[0]}, {selectedNumbers[1]}, {selectedNumbers[2]}] distances: {d01}, {d02}, {d12}");
         }
         else
         {
-            Debug.Log($"StaticValsReach7: Spacing OK! [{selectedNumbers[0]}, {selectedNumbers[1]}, {selectedNumbers[2]}] distances: {d01}, {d02}, {d12}");
+            Debug.Log($"StaticValsReach7: Using set #{idx} [{selectedNumbers[0]}, {selectedNumbers[1]}, {selectedNumbers[2]}] distances: {d01}, {d02}, {d12} (all ?50 units ?10cm)");
         }
 
         return selectedNumbers;
